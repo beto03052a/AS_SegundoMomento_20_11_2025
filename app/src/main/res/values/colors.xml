@@ -1,0 +1,44 @@
+<resources>
+    <!-- Primarios: Gradiente moderno azul-púrpura -->
+    <color name="colorPrimary">#667EEA</color>
+    <color name="colorPrimaryDark">#764BA2</color>
+    <color name="colorPrimaryLight">#8B9AFF</color>
+    <color name="colorAccent">#10B981</color>
+    <color name="colorAccentDark">#059669</color>
+
+    <!-- Fondo y tarjetas -->
+    <color name="colorBackground">#F8FAFC</color>
+    <color name="colorBackgroundSecondary">#F1F5F9</color>
+    <color name="colorCard">#FFFFFF</color>
+    <color name="colorCardStroke">#E2E8F0</color>
+    <color name="colorCardHover">#F8FAFC</color>
+
+    <!-- Texto -->
+    <color name="colorTextPrimary">#0F172A</color>
+    <color name="colorTextSecondary">#64748B</color>
+    <color name="colorTextTertiary">#94A3B8</color>
+    <color name="colorTextDisabled">#CBD5E1</color>
+
+    <!-- Estados -->
+    <color name="colorDanger">#EF4444</color>
+    <color name="colorWarning">#F59E0B</color>
+    <color name="colorSuccess">#10B981</color>
+    <color name="colorInfo">#3B82F6</color>
+
+    <!-- Estados de tickets -->
+    <color name="colorEstadoPendiente">#FCD34D</color>
+    <color name="colorEstadoPendienteDark">#F59E0B</color>
+    <color name="colorEstadoProgreso">#60A5FA</color>
+    <color name="colorEstadoProgresoDark">#3B82F6</color>
+    <color name="colorEstadoCerrado">#34D399</color>
+    <color name="colorEstadoCerradoDark">#10B981</color>
+
+    <!-- Prioridades -->
+    <color name="colorPrioridadAlta">#EF4444</color>
+    <color name="colorPrioridadMedia">#F59E0B</color>
+    <color name="colorPrioridadBaja">#10B981</color>
+
+    <!-- Gradientes -->
+    <color name="gradientStart">#667EEA</color>
+    <color name="gradientEnd">#764BA2</color>
+</resources>

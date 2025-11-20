@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true"
+    android:background="@color/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:background="@color/colorCard">
+
+        <!-- Título del diálogo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Información del Ticket"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Sucursal -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sucursal *"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etSucursal"
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ingrese la sucursal"
+            android:inputType="textCapWords" />
+
+        <TextView
+            android:id="@+id/tvErrorSucursal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Este campo es obligatorio"
+            android:textSize="12sp"
+            android:textColor="@color/colorDanger"
+            android:visibility="gone"
+            android:layout_marginTop="4dp" />
+
+        <!-- Categoría -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Categoría *"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etCategoria"
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Electricidad, Internet, Plomería..."
+            android:inputType="textCapWords" />
+
+        <TextView
+            android:id="@+id/tvErrorCategoria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Este campo es obligatorio"
+            android:textSize="12sp"
+            android:textColor="@color/colorDanger"
+            android:visibility="gone"
+            android:layout_marginTop="4dp" />
+
+        <!-- Prioridad (Spinner) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Prioridad *"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/spinnerPrioridad"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_spinner_modern"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:popupBackground="@color/colorCard" />
+
+        <!-- Estado (Spinner) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estado *"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/spinnerEstado"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_spinner_modern"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:popupBackground="@color/colorCard" />
+
+        <!-- Fecha (DatePicker) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fecha de Reporte *"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etFechaReporte"
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Seleccione la fecha"
+            android:inputType="none"
+            android:focusable="false"
+            android:clickable="true" />
+
+        <TextView
+            android:id="@+id/tvErrorFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Este campo es obligatorio"
+            android:textSize="12sp"
+            android:textColor="@color/colorDanger"
+            android:visibility="gone"
+            android:layout_marginTop="4dp" />
+
+        <!-- Descripción -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descripción"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etDescripcion"
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Descripción del problema"
+            android:minLines="3"
+            android:gravity="top|start"
+            android:inputType="textMultiLine" />
+
+        <!-- Técnico -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Técnico Asignado"
+            android:textSize="14sp"
+            android:textColor="@color/colorTextPrimary"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
+
+        <EditText
+            android:id="@+id/etTecnico"
+            style="@style/ModernEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nombre del técnico"
+            android:inputType="textCapWords" />
+
+    </LinearLayout>
+
+</ScrollView>

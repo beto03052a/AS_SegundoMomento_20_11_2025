@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="filtros_estado">
+        <item>Todos</item>
+        <item>Pendiente</item>
+        <item>En progreso</item>
+        <item>Cerrado</item>
+    </string-array>
+
+    <string-array name="ordenamientos">
+        <item>Más recientes</item>
+        <item>Más antiguos</item>
+        <item>Prioridad alta primero</item>
+    </string-array>
+
+    <string-array name="prioridades">
+        <item>Baja</item>
+        <item>Media</item>
+        <item>Alta</item>
+    </string-array>
+
+    <string-array name="estados">
+        <item>Pendiente</item>
+        <item>En progreso</item>
+        <item>Cerrado</item>
+    </string-array>
+</resources>
+

@@ -1,12 +1,5 @@
 package com.example.ticketsapp;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -22,6 +15,13 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -148,8 +148,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void marcarComoCerrado(Ticket ticket) {
         if (!hayInternet()) {
-            Toast.makeText(this, "Se requiere internet para actualizar", Toast.LENGTH_SHORT).show();
+            // Actualización solo local (offline)
+            ticket.setEstado("Cerrado");
+            // Actualizar en lista completa
+            for (int i = 0; i < listaTicketsCompleta.size(); i++) {
+                Ticket t = listaTicketsCompleta.get(i);
+                if (t.getId() != null && t.getId().equals(ticket.getId())) {
+                    listaTicketsCompleta.set(i, ticket);
+                    break;
+                }
+            }
+            TicketsLocalStorage.guardarTickets(this, listaTicketsCompleta);
+            actualizarEstadisticas();
             aplicarFiltrosYOrdenamiento();
+            TicketsSyncManager.enqueueUpdate(this, ticket);
+            Toast.makeText(this, "Ticket marcado como Cerrado (offline)", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -171,6 +184,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 runOnUiThread(() -> {
+                    TicketsLocalStorage.guardarTickets(MainActivity.this, listaTicketsCompleta);
                     actualizarEstadisticas();
                     aplicarFiltrosYOrdenamiento();
                     Toast.makeText(MainActivity.this, "Ticket marcado como Cerrado", Toast.LENGTH_SHORT).show();
@@ -325,19 +339,38 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void cargarTickets() {
+        // Si no hay internet, intentamos cargar desde almacenamiento local
         if (!hayInternet()) {
-            Toast.makeText(this, "Sin conexión. No se puede cargar la API.", Toast.LENGTH_SHORT).show();
+            List<Ticket> desdeCache = TicketsLocalStorage.cargarTickets(this);
+            listaTicketsCompleta.clear();
+            listaTicketsCompleta.addAll(desdeCache);
+
+            actualizarEstadisticas();
+            aplicarFiltrosYOrdenamiento();
+            swipeRefreshLayout.setRefreshing(false);
+
+            if (desdeCache.isEmpty()) {
+                Toast.makeText(this,
+                        "Sin conexión y sin datos guardados.", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        "Sin conexión. Mostrando últimos datos guardados.", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
 
         new Thread(() -> {
             try {
+                // Primero sincronizamos operaciones pendientes (si las hay)
+                TicketsSyncManager.sincronizarPendientes(MainActivity.this);
+
                 List<Ticket> desdeApi = TicketsApiService.obtenerTickets();
 
                 listaTicketsCompleta.clear();
                 listaTicketsCompleta.addAll(desdeApi);
 
                 runOnUiThread(() -> {
+                    TicketsLocalStorage.guardarTickets(MainActivity.this, listaTicketsCompleta);
                     actualizarEstadisticas();
                     aplicarFiltrosYOrdenamiento();
                     swipeRefreshLayout.setRefreshing(false);
@@ -346,9 +379,22 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
                 runOnUiThread(() -> {
+                    // Si falla la API, intentamos también cargar desde caché
+                    List<Ticket> desdeCache = TicketsLocalStorage.cargarTickets(MainActivity.this);
+                    listaTicketsCompleta.clear();
+                    listaTicketsCompleta.addAll(desdeCache);
+
+                    actualizarEstadisticas();
+                    aplicarFiltrosYOrdenamiento();
                     swipeRefreshLayout.setRefreshing(false);
-                    Toast.makeText(MainActivity.this,
-                            "Error cargando tickets", Toast.LENGTH_SHORT).show();
+
+                    if (desdeCache.isEmpty()) {
+                        Toast.makeText(MainActivity.this,
+                                "Error cargando tickets y no hay datos guardados.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(MainActivity.this,
+                                "Error cargando tickets de la API. Mostrando datos guardados.", Toast.LENGTH_SHORT).show();
+                    }
                 });
             }
         }).start();
@@ -369,9 +415,7 @@ public class MainActivity extends AppCompatActivity {
             intent.removeExtra("editar_ticket_id");
         } else {
             // Recargar cuando vuelve de TicketDetailActivity
-            if (hayInternet()) {
-                cargarTickets();
-            }
+            cargarTickets();
         }
     }
 
@@ -488,18 +532,26 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (!hayInternet()) {
-                    Toast.makeText(MainActivity.this,
-                            "Se requiere internet para guardar en la API", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+                boolean tieneInternet = hayInternet();
 
                 if (esEdicion) {
-                    editarTicketApi(ticketExistente, sucursal, categoria, prioridad,
-                            estado, fecha, descripcion, tecnico, dialog);
+                    if (tieneInternet) {
+                        editarTicketApi(ticketExistente, sucursal, categoria, prioridad,
+                                estado, fecha, descripcion, tecnico, dialog);
+                    } else {
+                        // Edición solo local (offline)
+                        editarTicketLocal(ticketExistente, sucursal, categoria, prioridad,
+                                estado, fecha, descripcion, tecnico, dialog);
+                    }
                 } else {
-                    crearTicketApi(sucursal, categoria, prioridad,
-                            estado, fecha, descripcion, tecnico, dialog);
+                    if (tieneInternet) {
+                        crearTicketApi(sucursal, categoria, prioridad,
+                                estado, fecha, descripcion, tecnico, dialog);
+                    } else {
+                        // Creación solo local (offline)
+                        crearTicketLocal(sucursal, categoria, prioridad,
+                                estado, fecha, descripcion, tecnico, dialog);
+                    }
                 }
             });
         });
@@ -533,6 +585,7 @@ public class MainActivity extends AppCompatActivity {
                 listaTicketsCompleta.add(0, creado);
 
                 runOnUiThread(() -> {
+                    TicketsLocalStorage.guardarTickets(MainActivity.this, listaTicketsCompleta);
                     actualizarEstadisticas();
                     aplicarFiltrosYOrdenamiento();
                     dialog.dismiss();
@@ -547,6 +600,25 @@ public class MainActivity extends AppCompatActivity {
                                 "Error creando ticket", Toast.LENGTH_SHORT).show());
             }
         }).start();
+    }
+
+    // Crear ticket solo en almacenamiento local (offline)
+    private void crearTicketLocal(String sucursal, String categoria, String prioridad,
+                                  String estado, String fecha, String descripcion,
+                                  String tecnico, AlertDialog dialog) {
+        Ticket nuevo = new Ticket(sucursal, categoria, prioridad,
+                estado, fecha, descripcion, tecnico);
+        // Generar un id temporal local
+        nuevo.setId("local_" + System.currentTimeMillis());
+
+        listaTicketsCompleta.add(0, nuevo);
+        TicketsLocalStorage.guardarTickets(this, listaTicketsCompleta);
+        TicketsSyncManager.enqueueCreate(this, nuevo);
+        actualizarEstadisticas();
+        aplicarFiltrosYOrdenamiento();
+        dialog.dismiss();
+        Toast.makeText(this,
+                "Ticket creado (offline, no sincronizado con la API)", Toast.LENGTH_SHORT).show();
     }
 
     private void editarTicketApi(Ticket original, String sucursal, String categoria,
@@ -577,6 +649,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 runOnUiThread(() -> {
+                    TicketsLocalStorage.guardarTickets(MainActivity.this, listaTicketsCompleta);
                     actualizarEstadisticas();
                     aplicarFiltrosYOrdenamiento();
                     dialog.dismiss();
@@ -593,6 +666,36 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    // Editar ticket solo en almacenamiento local (offline)
+    private void editarTicketLocal(Ticket original, String sucursal, String categoria,
+                                   String prioridad, String estado, String fecha,
+                                   String descripcion, String tecnico, AlertDialog dialog) {
+        original.setSucursal(sucursal);
+        original.setCategoria(categoria);
+        original.setPrioridad(prioridad);
+        original.setEstado(estado);
+        original.setFechaReporte(fecha);
+        original.setDescripcion(descripcion);
+        original.setTecnicoAsignado(tecnico);
+
+        // Actualizar en lista completa
+        for (int i = 0; i < listaTicketsCompleta.size(); i++) {
+            Ticket t = listaTicketsCompleta.get(i);
+            if (t.getId() != null && t.getId().equals(original.getId())) {
+                listaTicketsCompleta.set(i, original);
+                break;
+            }
+        }
+
+        TicketsLocalStorage.guardarTickets(this, listaTicketsCompleta);
+        TicketsSyncManager.enqueueUpdate(this, original);
+        actualizarEstadisticas();
+        aplicarFiltrosYOrdenamiento();
+        dialog.dismiss();
+        Toast.makeText(this,
+                "Ticket actualizado (offline, no sincronizado con la API)", Toast.LENGTH_SHORT).show();
+    }
+
     private void confirmarEliminar(Ticket t) {
         new AlertDialog.Builder(this)
                 .setTitle("Eliminar ticket")
@@ -604,8 +707,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void eliminarTicketApi(Ticket t) {
         if (!hayInternet()) {
+            // Eliminación solo local (offline)
+            listaTicketsCompleta.remove(t);
+            TicketsLocalStorage.guardarTickets(this, listaTicketsCompleta);
+            TicketsSyncManager.enqueueDelete(this, t);
+            actualizarEstadisticas();
+            aplicarFiltrosYOrdenamiento();
             Toast.makeText(this,
-                    "Se requiere internet para eliminar en la API", Toast.LENGTH_SHORT).show();
+                    "Ticket eliminado (offline, no sincronizado con la API)", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -617,6 +726,7 @@ public class MainActivity extends AppCompatActivity {
                     listaTicketsCompleta.remove(t);
 
                     runOnUiThread(() -> {
+                        TicketsLocalStorage.guardarTickets(MainActivity.this, listaTicketsCompleta);
                         actualizarEstadisticas();
                         aplicarFiltrosYOrdenamiento();
                         Toast.makeText(MainActivity.this,

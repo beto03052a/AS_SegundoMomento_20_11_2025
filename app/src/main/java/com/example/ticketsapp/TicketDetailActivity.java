@@ -24,6 +24,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class TicketDetailActivity extends AppCompatActivity {
@@ -256,13 +257,12 @@ public class TicketDetailActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (!hayInternet()) {
-                    Toast.makeText(TicketDetailActivity.this,
-                            "Se requiere internet para guardar en la API", Toast.LENGTH_SHORT).show();
-                    return;
+                if (hayInternet()) {
+                    editarTicketApi(sucursal, categoria, prioridad, estado, fecha, descripcion, tecnico, dialog);
+                } else {
+                    // Edición solo local (offline)
+                    editarTicketLocal(sucursal, categoria, prioridad, estado, fecha, descripcion, tecnico, dialog);
                 }
-
-                editarTicketApi(sucursal, categoria, prioridad, estado, fecha, descripcion, tecnico, dialog);
             });
         });
 
@@ -315,6 +315,36 @@ public class TicketDetailActivity extends AppCompatActivity {
         }).start();
     }
 
+    // Editar ticket solo en almacenamiento local (offline) y encolar para sincronizar
+    private void editarTicketLocal(String sucursal, String categoria, String prioridad,
+                                   String estado, String fecha, String descripcion,
+                                   String tecnico, AlertDialog dialog) {
+        ticket.setSucursal(sucursal);
+        ticket.setCategoria(categoria);
+        ticket.setPrioridad(prioridad);
+        ticket.setEstado(estado);
+        ticket.setFechaReporte(fecha);
+        ticket.setDescripcion(descripcion);
+        ticket.setTecnicoAsignado(tecnico);
+
+        // Actualizar ticket en caché local
+        List<Ticket> lista = TicketsLocalStorage.cargarTickets(this);
+        for (int i = 0; i < lista.size(); i++) {
+            Ticket t = lista.get(i);
+            if (t.getId() != null && t.getId().equals(ticket.getId())) {
+                lista.set(i, ticket);
+                break;
+            }
+        }
+        TicketsLocalStorage.guardarTickets(this, lista);
+        TicketsSyncManager.enqueueUpdate(this, ticket);
+
+        mostrarDatos();
+        dialog.dismiss();
+        Toast.makeText(this,
+                "Ticket actualizado (offline, no sincronizado con la API)", Toast.LENGTH_SHORT).show();
+    }
+
     private void mostrarBottomSheetCambiarEstado() {
         BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
         View view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_cambiar_estado, null);
@@ -343,30 +373,45 @@ public class TicketDetailActivity extends AppCompatActivity {
     }
 
     private void cambiarEstado(String nuevoEstado) {
-        if (!hayInternet()) {
-            Toast.makeText(this, "Se requiere internet para actualizar", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (hayInternet()) {
+            new Thread(() -> {
+                try {
+                    ticket.setEstado(nuevoEstado);
+                    Ticket actualizado = TicketsApiService.actualizarTicket(ticket);
+                    ticket = actualizado;
 
-        new Thread(() -> {
-            try {
-                ticket.setEstado(nuevoEstado);
-                Ticket actualizado = TicketsApiService.actualizarTicket(ticket);
-                ticket = actualizado;
-
-                runOnUiThread(() -> {
-                    mostrarDatos();
-                    Toast.makeText(TicketDetailActivity.this,
-                            "Estado actualizado a: " + nuevoEstado, Toast.LENGTH_SHORT).show();
-                });
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() ->
+                    runOnUiThread(() -> {
+                        mostrarDatos();
                         Toast.makeText(TicketDetailActivity.this,
-                                "Error actualizando estado", Toast.LENGTH_SHORT).show());
+                                "Estado actualizado a: " + nuevoEstado, Toast.LENGTH_SHORT).show();
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(() ->
+                            Toast.makeText(TicketDetailActivity.this,
+                                    "Error actualizando estado", Toast.LENGTH_SHORT).show());
+                }
+            }).start();
+        } else {
+            // Cambio de estado solo local (offline) y encolar para sincronizar
+            ticket.setEstado(nuevoEstado);
+
+            List<Ticket> lista = TicketsLocalStorage.cargarTickets(this);
+            for (int i = 0; i < lista.size(); i++) {
+                Ticket t = lista.get(i);
+                if (t.getId() != null && t.getId().equals(ticket.getId())) {
+                    lista.set(i, ticket);
+                    break;
+                }
             }
-        }).start();
+            TicketsLocalStorage.guardarTickets(this, lista);
+            TicketsSyncManager.enqueueUpdate(this, ticket);
+
+            mostrarDatos();
+            Toast.makeText(this,
+                    "Estado actualizado a: " + nuevoEstado + " (offline, se sincronizará con la API)", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private boolean hayInternet() {
